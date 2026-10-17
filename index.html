@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Escape the Box">
+<meta name="theme-color" content="#E8501A">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Escape the Box</title>
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,-apple-system,sans-serif;-webkit-text-size-adjust:100%}
+img{max-width:100%}[hidden]{display:none!important}
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=STIX+Two+Text:ital,wght@0,500;1,500&display=swap">
+<style>
+/* Layout: single play column; nested "boxes" around x are the hero, equation below, big answer chips at thumb height */
+:root{
+  --bg:#F1EEF8; --surface:#FFFFFF; --sunk:#E7E2F2; --ink:#1C1930; --muted:#625C7A; --line:#D7D0E8;
+  --accent:#E8501A; --accent-ink:#FFFFFF; --good:#13835A; --good-bg:#DDF3E8; --bad:#C42F45; --bad-bg:#FBE3E7;
+  --l0:#E8501A; --l1:#6D45E6; --l2:#0A8F8A; --l3:#C98F00; --l4:#C72C7A; --on-bad:#FFFFFF;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+  --math:"STIX Two Text", "Cambria Math", "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15121F; --surface:#211D30; --sunk:#1A1727; --ink:#F1EEF8; --muted:#A79FC2; --line:#3A3452;
+  --accent:#FF7340; --accent-ink:#1C1009; --good:#4FD39B; --good-bg:#16352A; --bad:#FF7086; --bad-bg:#3A1A23;
+  --l0:#FF7340; --l1:#9C80FF; --l2:#3CC9C2; --l3:#F2BE3A; --l4:#F25FA6; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#15121F; --surface:#211D30; --sunk:#1A1727; --ink:#F1EEF8; --muted:#A79FC2; --line:#3A3452;
+  --accent:#FF7340; --accent-ink:#1C1009; --good:#4FD39B; --good-bg:#16352A; --bad:#FF7086; --bad-bg:#3A1A23;
+  --l0:#FF7340; --l1:#9C80FF; --l2:#3CC9C2; --l3:#F2BE3A; --l4:#F25FA6; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:16px 40px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1;margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1 .x{font-family:var(--math);font-style:italic;font-weight:500;color:var(--accent);
+  display:inline-block;border:3px solid currentColor;border-radius:8px;padding:0 .14em;line-height:1.05;margin-left:.08em}
+.stats{display:flex;gap:14px;font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--muted)}
+.stats b{display:block;font-family:var(--display);font-size:1.25rem;color:var(--ink);line-height:1.1}
+.bar{height:8px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s}
+.barlabel{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-top:4px}
+
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--sunk);padding:4px;border-radius:12px}
+.tabs button{border:0;background:transparent;padding:9px 4px;border-radius:9px;font-weight:700;font-size:.9rem;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(20,10,40,.12)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.tiers{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:.85rem;font-weight:700}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.chip:disabled{opacity:.5;cursor:not-allowed;font-weight:400}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.meta{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* nested boxes */
+.boxes{display:flex;justify-content:center;padding:6px 0}
+.box{border:3px solid var(--c);border-radius:14px;padding:22px 12px 10px;position:relative;display:flex;justify-content:center;align-items:center;transition:opacity .3s, transform .3s}
+.box>.tag{position:absolute;top:-1px;left:50%;transform:translate(-50%,-50%);background:var(--c);color:var(--surface);font-weight:700;font-size:.8rem;
+  border-radius:99px;padding:1px 9px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.box.outer.hint>.tag{outline:3px solid var(--ink);outline-offset:2px;animation:wiggle .5s ease 2}
+.d0{--c:var(--l0)}.d1{--c:var(--l1)}.d2{--c:var(--l2)}.d3{--c:var(--l3)}.d4{--c:var(--l4)}
+.core{font-family:var(--math);font-style:italic;font-size:1.6rem;width:2.2rem;height:2.2rem;display:grid;place-items:center;border-radius:50%;background:var(--sunk)}
+.core.free{background:var(--good);color:var(--surface);animation:pop .5s ease}
+
+/* equations */
+.eq{font-family:var(--math);font-size:clamp(1.45rem,6vw,1.9rem);display:flex;align-items:center;justify-content:center;gap:.4em;flex-wrap:wrap;
+  padding:12px 6px;background:var(--sunk);border-radius:12px;min-height:5rem;text-align:center}
+.eq.pop{animation:pop .35s ease}
+.eq .eqs{color:var(--muted)}
+.v{font-style:italic}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .1em;font-size:.92em;line-height:1.15}
+.fn{border-bottom:.07em solid currentColor;padding:0 .2em .05em}
+.fd{padding:.05em .2em 0}
+.sqrt{white-space:nowrap}.rad{border-top:.07em solid currentColor;padding:0 .1em}
+.hl{color:var(--accent);background:color-mix(in srgb, var(--accent) 16%, transparent);border-radius:4px;padding:0 .12em}
+.hlf>.fn{border-bottom-color:var(--accent)}
+
+.ask{font-weight:700;font-size:1.05rem;margin:0;text-wrap:balance}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opt{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;transition:transform .1s}
+.opt:active{transform:scale(.97)}
+.opt .big{font-family:var(--math);font-size:1.5rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.opt .small{font-size:.78rem;color:var(--muted)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg);opacity:.75;cursor:not-allowed}
+.opt.text .big{font-family:var(--body);font-size:1rem;font-weight:700}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border:2px solid var(--line);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.fb{border-radius:12px;padding:10px 12px;font-size:.95rem}
+.fb.ok{background:var(--good-bg);color:var(--ink);border-left:4px solid var(--good)}
+.fb.no{background:var(--bad-bg);color:var(--ink);border-left:4px solid var(--bad)}
+.fb.tip{background:var(--sunk);border-left:4px solid var(--accent)}
+
+.trail{display:flex;flex-direction:column;gap:2px;border-top:1px dashed var(--line);padding-top:10px}
+.tl{display:grid;grid-template-columns:5.5rem 1fr;gap:8px;align-items:center;font-family:var(--math);font-size:1.1rem;padding:4px 6px;border-radius:8px;min-width:0}
+.tl .step{font-family:var(--body);font-size:.75rem;color:var(--muted);font-weight:700}
+.tl .eqt{overflow-x:auto}
+button.tl{border:2px solid transparent;background:transparent;text-align:left;width:100%}
+button.tl:hover{border-color:var(--line)}
+.tl.picked-bad{border-color:var(--bad);background:var(--bad-bg)}
+.tl.picked-ok{border-color:var(--good);background:var(--good-bg)}
+
+.win{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.win h2{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0}
+.badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.badge{border-radius:99px;padding:3px 10px;font-size:.8rem;font-weight:700;background:var(--sunk);font-variant-numeric:tabular-nums}
+.badge.par{background:var(--good);color:var(--surface)}
+
+/* bosses */
+.blist{display:grid;gap:8px}
+.bcard{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;text-align:left;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.bcard .bn{font-family:var(--display);font-weight:800;font-size:1.1rem}
+.bcard .bf{font-family:var(--math);font-size:1.15rem;grid-row:span 2;align-self:center}
+.bcard .bs{font-size:.8rem;color:var(--muted)}
+.bcard.beaten{border-color:var(--good)}
+.bcard:disabled{opacity:.5;cursor:not-allowed}
+
+/* builder */
+.ops4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ops4 button{border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 0;font-family:var(--math);font-size:1.4rem}
+.ops4 button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--surface);font-size:1.3rem;font-weight:700}
+.stepper output{font-family:var(--math);font-size:1.8rem;min-width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+
+details.parents{font-size:.92rem;color:var(--muted)}
+details.parents summary{cursor:pointer;font-weight:700;color:var(--ink)}
+details.parents p{margin:.6em 0}
+.small-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.small-btns button{border:1.5px solid var(--line);background:transparent;border-radius:8px;padding:6px 10px;font-size:.85rem}
+
+/* balance scale */
+.scalewrap{position:relative;display:flex;flex-direction:column;align-items:center;padding-top:8px}
+.scale{width:100%;transform-origin:50% 100%}
+.scale .eq{position:relative}
+.beam{height:6px;background:var(--muted);opacity:.55;border-radius:3px;margin:6px 6% 0}
+.fulcrum{width:30px;height:16px;background:var(--muted);opacity:.55;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.scale.tilt-l{animation:tiltL .55s cubic-bezier(.3,1.5,.5,1) forwards}
+.scale.tilt-r{animation:tiltR .55s cubic-bezier(.3,1.5,.5,1) forwards}
+.scale.tilt-l .beam,.scale.tilt-r .beam,.scale.wobble .beam{background:var(--bad);opacity:1}
+.scale.bounce{animation:bounce .6s ease}
+.scale.wobble{animation:wobble .9s ease}
+.eqnote{position:absolute;top:-4px;left:50%;transform:translateX(-50%);background:var(--bad);color:var(--on-bad);font-weight:700;font-size:.8rem;
+  border-radius:99px;padding:2px 10px;white-space:nowrap;z-index:2;animation:noteIn .3s ease}
+.eq.bad{background:var(--bad-bg);animation:shakeX .4s ease 2}
+.eq.slidein{animation:slideIn .45s ease}
+.eqs.neq{color:var(--bad);font-weight:700;display:inline-block;animation:pop .35s}
+/* tokens moving inside the equation */
+.tk{display:inline-block}
+.tk.in{color:var(--accent);animation:dropIn .55s cubic-bezier(.2,1.5,.4,1)}
+.tk.set{color:var(--accent)}
+.tk.cx{text-decoration:line-through;text-decoration-color:var(--accent);text-decoration-thickness:.1em;animation:cxOut .8s ease forwards}
+.tk.new{border-radius:4px;animation:glow 1.5s ease}
+.tk.bad{color:var(--bad);animation:dropIn .4s ease, shakeX .35s ease .4s 2}
+/* boxes reacting */
+.boxes{position:relative}
+.box.peel{animation:peel .8s ease forwards}
+.box.peel>.tag{animation:tagFly .8s ease forwards}
+.box.shake{animation:shakeX .35s ease 2}
+.box.blocked>.tag{background:var(--bad);animation:wiggle .35s ease 3}
+.box.ghost{--c:var(--bad);border-style:dashed;animation:ghostIn .4s ease}
+.box.ghost>.tag{animation:dropTag .4s ease}
+.burst{position:absolute;left:50%;top:50%;pointer-events:none}
+.burst i{position:absolute;width:9px;height:9px;border-radius:2px;background:var(--c);animation:burst 1s ease-out forwards}
+.tl.picked-bad{animation:shakeX .35s ease 2}
+.tl.picked-ok{animation:pop .4s ease}
+.opt:disabled{cursor:wait}
+
+@keyframes tiltL{to{transform:rotate(-7deg)}}
+@keyframes tiltR{to{transform:rotate(7deg)}}
+@keyframes bounce{0%,100%{transform:rotate(0)}30%{transform:rotate(1.5deg)}65%{transform:rotate(-1.5deg)}}
+@keyframes wobble{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}45%{transform:rotate(5deg)}70%{transform:rotate(-3deg)}}
+@keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes dropIn{from{transform:translateY(-.9em);opacity:0}}
+@keyframes cxOut{to{opacity:.3;transform:scale(.85)}}
+@keyframes glow{from{background:color-mix(in srgb, var(--good) 40%, transparent)}to{background:transparent}}
+@keyframes slideIn{from{transform:translateX(36px);opacity:0}}
+@keyframes noteIn{from{opacity:0;transform:translate(-50%,8px)}}
+@keyframes peel{to{border-color:transparent}}
+@keyframes tagFly{to{transform:translate(-50%,-220%) rotate(-14deg);opacity:0}}
+@keyframes ghostIn{from{border-color:transparent}}
+@keyframes dropTag{from{transform:translate(-50%,-200%);opacity:0}}
+@keyframes burst{from{transform:translate(-50%,-50%);opacity:1}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(240deg) scale(.4);opacity:0}}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes wiggle{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(-6deg)}75%{transform:translate(-50%,-50%) rotate(6deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:380px){.box{padding:20px 8px 8px}.opt .big{font-size:1.3rem}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Escape the B<span class="x">x</span></h1>
+    <div class="stats">
+      <div><b id="xp">0</b>XP</div>
+      <div><b id="streak">0</b>Par streak</div>
+    </div>
+  </header>
+  <div>
+    <div class="bar"><i id="barfill" style="width:0%"></i></div>
+    <div class="barlabel"><span id="rank">Rookie</span><span id="next"></span></div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="escape" aria-selected="true">Escape</button>
+    <button role="tab" data-tab="build" aria-selected="false">Build</button>
+    <button role="tab" data-tab="spot" aria-selected="false">Spot it</button>
+    <button role="tab" data-tab="boss" aria-selected="false">Bosses</button>
+  </nav>
+  <main id="main"></main>
+  <details class="parents">
+    <summary>How it works (for parents)</summary>
+    <p>An equation is <i>x</i> wrapped in layers. To get <i>x</i> out, undo the outside layer first, and do the same thing to both sides. Every puzzle asks one question: what was the last thing done to <i>x</i>?</p>
+    <p><b>Escape</b> peels random equations. Par is the fewest moves possible. <b>Build</b> lets him wrap his own and then escape it. <b>Spot it</b> makes him the marker. <b>Bosses</b> are real formulas from science.</p>
+    <p>Ten to fifteen minutes is plenty. Start each session with a Warm-up win. Progress is saved in this browser on this device only.</p>
+    <div class="small-btns">
+      <button id="unlockAll" type="button">Unlock all levels</button>
+      <button id="resetBtn" type="button">Reset progress</button>
+    </div>
+    <p id="resetConfirm" hidden>Reset all XP and boss wins? <button id="resetYes" type="button" class="small-btns">Yes, reset</button></p>
+  </details>
+</div>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+const INV = {add:'sub', sub:'add', mul:'div', div:'mul'};
+const inv = o => ({op:INV[o.op], k:o.k});
+const SYM = {add:'+', sub:'−', mul:'×', div:'÷'};
+const lab = o => `${SYM[o.op]} ${o.k}`;
+const verb = o => ({add:`add ${o.k}`, sub:`subtract ${o.k}`, mul:`multiply by ${o.k}`, div:`divide by ${o.k}`})[o.op];
+const past = o => ({add:`had ${o.k} added`, sub:`had ${o.k} taken away`, mul:`was multiplied by ${o.k}`, div:`was divided by ${o.k}`})[o.op];
+
+const V = n => `<i class="v">${n}</i>`;
+const F = (n,d) => `<span class="frac"><span class="fn">${n}</span><span class="fd">${d}</span></span>`;
+const SQ = x => `<span class="sqrt">√<span class="rad">${x}</span></span>`;
+/* a token can carry a mark: in (just applied), cx (cancelling), set, new, bad */
+const T = (s, n, hl) => { const c = n.mark || (hl ? 'hl' : ''); return c ? `<span class="tk ${c}">${s}</span>` : s; };
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait = ms => new Promise(r => setTimeout(r, RM ? 0 : ms));
+
+/* expression trees */
+const wrap = (a, o) => ({t:o.op, a, k:o.k});
+const mark = (n, m) => ({...n, mark:m});
+const build = ops => ops.reduce(wrap, {t:'v', n:'x'});
+function R(n, hl){
+  switch(n.t){
+    case 'v': return V(n.n);
+    case 'add': return `${R(n.a)} ${T('+ '+n.k, n, hl)}`;
+    case 'sub': return `${R(n.a)} ${T('− '+n.k, n, hl)}`;
+    case 'mul':
+      if(n.a.t==='v') return `${T(String(n.k), n, hl)}${R(n.a)}`;
+      if(n.a.t==='div') return `${T(n.k+' ×', n, hl)} ${R(n.a)}`;
+      return `${T(String(n.k), n, hl)}(${R(n.a)})`;
+    case 'div': return `<span class="frac${!n.mark&&hl?' hlf':''}"><span class="fn">${R(n.a)}</span><span class="fd">${T(String(n.k), n, hl)}</span></span>`;
+  }
+}
+const EQ = neq => neq ? `<span class="eqs neq">≠</span>` : `<span class="eqs">=</span>`;
+const eqHTML = (l, r, hl, neq) => `${R(l, hl)} ${EQ(neq)} ${R(r)}`;
+function scaleHTML(inner, o={}){
+  return `<div class="scalewrap">${o.note?`<div class="eqnote" role="status">${o.note}</div>`:''}
+    <div class="scale ${o.tilt||''}"><div class="eq ${o.eqCls||''}">${inner}</div><div class="beam"></div></div>
+    <div class="fulcrum"></div></div>`;
+}
+function burstHTML(){
+  let s = '';
+  for(let i=0;i<20;i++){
+    const a = i/20*Math.PI*2 + Math.random()*.3, d = 55 + Math.random()*55;
+    s += `<i style="--dx:${Math.round(Math.cos(a)*d)}px;--dy:${Math.round(Math.sin(a)*d)}px;--c:var(--l${i%5})"></i>`;
+  }
+  return `<div class="burst" aria-hidden="true">${s}</div>`;
+}
+function leftoverNote(O, op){
+  const sgn = o => o.op==='add' ? o.k : -o.k;
+  if((O.op==='add'||O.op==='sub') && (op.op==='add'||op.op==='sub')){
+    const net = sgn(O) + sgn(op);
+    return `${lab(O)} ${lab(op)} leaves ${net>0?'+':'−'} ${Math.abs(net)} stuck to x`;
+  }
+  return `${lab(O)} and ${lab(op)} don't cancel`;
+}
+
+function genOps(n){
+  const ops = []; let mult = Math.random() < .55;
+  for(let i=0;i<n;i++){
+    ops.push(mult ? {op:pick(['mul','mul','div']), k:rnd(2,9)} : {op:pick(['add','sub']), k:rnd(1,12)});
+    mult = !mult;
+  }
+  return ops;
+}
+
+/* ---------- progress ---------- */
+const KEY = 'escape-the-box.v1';
+let S = {xp:0, streak:0, best:0, bosses:[], unlockAll:false};
+try { const raw = localStorage.getItem(KEY); if(raw) S = Object.assign(S, JSON.parse(raw)); } catch(e){}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} };
+
+const TIERS = [
+  {id:1, name:'Warm-up', layers:1, need:0},
+  {id:2, name:'Two locks', layers:2, need:50},
+  {id:3, name:'Triple box', layers:3, need:150},
+  {id:4, name:'Vault', layers:4, need:350},
+];
+const BOSS_NEED = 150;
+const RANKS = [[0,'Rookie'],[50,'Lock picker'],[150,'Locksmith'],[350,'Escape artist'],[700,'Houdini']];
+const unlocked = need => S.unlockAll || S.xp >= need;
+
+function addXP(n){
+  const before = S.xp; S.xp += n; save();
+  const gained = [...TIERS.filter(t => t.need>before && t.need<=S.xp).map(t=>t.name)];
+  if(BOSS_NEED>before && BOSS_NEED<=S.xp) gained.push('Bosses');
+  return gained;
+}
+function renderHeader(){
+  $('#xp').textContent = S.xp;
+  $('#streak').textContent = S.streak;
+  let cur = RANKS[0], nxt = null;
+  for(const r of RANKS){ if(S.xp >= r[0]) cur = r; else { nxt = r; break; } }
+  $('#rank').textContent = cur[1];
+  if(nxt){
+    $('#next').textContent = `${nxt[0]-S.xp} XP to ${nxt[1]}`;
+    $('#barfill').style.width = Math.round((S.xp-cur[0])/(nxt[0]-cur[0])*100) + '%';
+  } else { $('#next').textContent = 'Top rank'; $('#barfill').style.width = '100%'; }
+}
+
+/* ---------- state ---------- */
+let tab = 'escape';
+let tier = Math.max(...TIERS.filter(t => unlocked(t.need)).map(t => t.id));
+let P = null;            // current escape puzzle
+let B = {ops:[], type:'mul', k:3};  // builder
+let SP = null;           // spot-the-error
+let BS = null;           // boss session
+
+/* ---------- escape puzzles ---------- */
+function newPuzzle(ops, source){
+  P = {ops:ops.slice(), lhs:build(ops), rhs:{t:'v', n:'y'}, par:ops.length, moves:0, trail:[], hint:false, done:false, source, fb:null, earned:0, pop:false};
+  P.start = eqHTML(P.lhs, P.rhs);
+  P.choices = makeChoices(P.ops);
+}
+function altK(o){
+  const min = (o.op==='mul'||o.op==='div') ? 2 : 1;
+  let k; do { k = o.k + pick([-2,-1,1,2]); } while(k < min || k === o.k);
+  return k;
+}
+function makeChoices(ops){
+  const O = ops[ops.length-1], I = inv(O);
+  const list = [{op:I, ok:true}, {op:O, kind:'same'}];
+  if(ops.length > 1){
+    const J = inv(ops[ops.length-2]);
+    if(lab(J) !== lab(I)) list.push({op:J, kind:'inner'});
+  }
+  list.push(Math.random() < .5 ? {op:I, kind:'oneside'} : {op:{op:I.op, k:altK(I)}, kind:'num'});
+  if(list.length < 4) list.push({op:{op:I.op, k:altK(I)}, kind:'num'});
+  const seen = new Set();
+  return shuffle(list.filter(c => { const key = lab(c.op)+(c.kind==='oneside'?'1':''); if(seen.has(key)) return false; seen.add(key); return true; })).slice(0,4);
+}
+async function choose(i){
+  const p = P;
+  if(p.anim || p.done) return;
+  const c = p.choices[i]; if(c.used) return;
+  const O = p.ops[p.ops.length-1], I = inv(O);
+  const show = () => { if(P === p) render(); };
+  p.moves++; p.fb = null; p.hint = false;
+  if(c.ok){
+    // 1. the move drops onto both sides
+    p.anim = {k:'apply', I, O}; show(); await wait(750);
+    // 2. the matching pair cancels and the outer box peels away
+    p.anim = {k:'cancel', I, O}; show(); await wait(850);
+    p.anim = null;
+    p.ops.pop(); p.lhs = p.lhs.a; p.rhs = wrap(p.rhs, I);
+    p.trail.push({step:`${lab(I)} both sides`, html:eqHTML(p.lhs, p.rhs)});
+    p.earned += 10; let gained = addXP(10);
+    p.fb = {cls:'ok', msg:`Yes. <i>x</i> ${past(O)} last, so you ${verb(I)} on both sides.`};
+    p.flash = true;
+    if(!p.ops.length){
+      p.done = true;
+      p.atPar = p.moves === p.par;
+      if(p.atPar){ const bonus = 5*p.par + (p.source==='build'?0:5); p.earned += bonus; gained = gained.concat(addXP(bonus)); S.streak++; S.best = Math.max(S.best, S.streak); }
+      else S.streak = 0;
+      save();
+      p.gained = gained;
+    } else {
+      p.choices = makeChoices(p.ops);
+      if(gained.length) p.fb.msg += ` <b>Unlocked: ${gained.join(', ')}.</b>`;
+    }
+    show();
+  } else {
+    c.used = true;
+    const msgs = {
+      same: `${lab(c.op)} wraps <i>x</i> in another layer instead of removing one. The outer layer is ${lab(O)}, so do the opposite.`,
+      inner: `That layer is still buried inside, so nothing cancels. The outside layer is ${lab(O)}. Peel that one first.`,
+      oneside: `Changing only one side tips the scale, so the two sides are no longer equal. Whatever you do to one side, do to the other.`,
+      num: `Right kind of move, wrong number, so it doesn't cancel. Look closely at the outer layer.`,
+    };
+    p.anim = {k:'bad', kind:c.kind, op:c.op, O, I};
+    p.fb = {cls:'no', msg:msgs[c.kind]};
+    show(); await wait(2200);
+    p.anim = null; show();
+  }
+}
+function boxesHTML(ops, o={}){
+  let h = `<div class="core${o.freed?' free':''}">x</div>`;
+  ops.forEach((op,i) => {
+    const outer = i === ops.length-1;
+    let cls = `box d${i%5}`;
+    if(outer){ cls += ' outer'; if(o.hint) cls += ' hint'; if(o.peel) cls += ' peel'; if(o.shake) cls += ' shake'; }
+    if(o.blocked && i === ops.length-2) cls += ' blocked';
+    h = `<div class="${cls}"><span class="tag">${lab(op)}</span>${h}</div>`;
+  });
+  if(o.ghost) h = `<div class="box ghost"><span class="tag">${o.ghost}</span>${h}</div>`;
+  return `<div class="boxes" aria-label="x wrapped in ${ops.length} layers">${h}${o.burst?burstHTML():''}</div>`;
+}
+function trailHTML(start, trail){
+  return `<div class="trail"><div class="label">Your working</div>
+    <div class="tl"><span class="step">Start</span><span class="eqt">${start}</span></div>
+    ${trail.map(t => `<div class="tl"><span class="step">${t.step}</span><span class="eqt">${t.html}</span></div>`).join('')}</div>`;
+}
+function puzzleHTML(){
+  const layers = P.ops.length;
+  if(P.done){
+    const burst = !P.burstShown; P.burstShown = true;
+    return `${boxesHTML([], {freed:true, burst})}
+      ${scaleHTML(eqHTML(P.lhs, mark(P.rhs, P.flash?'new':undefined)), {eqCls:'pop', tilt:'bounce'})}
+      <div class="win">
+        <h2>${P.atPar ? 'Escaped at par' : 'Escaped'}</h2>
+        <div class="badges"><span class="badge">Moves ${P.moves}</span><span class="badge ${P.atPar?'par':''}">Par ${P.par}</span><span class="badge">+${P.earned} XP</span></div>
+        ${P.gained && P.gained.length ? `<div class="fb ok">Unlocked: <b>${P.gained.join(', ')}</b></div>` : ''}
+        ${!P.atPar ? `<div class="small" style="color:var(--muted);font-size:.9rem">Next time, ask: what was done to <i>x</i> last?</div>` : ''}
+      </div>
+      <button class="btn" data-act="${P.source==='build'?'rebuild':'next'}">${P.source==='build'?'Build another':'Next puzzle'}</button>
+      ${trailHTML(P.start, P.trail)}`;
+  }
+  const a = P.anim;
+  let l = P.lhs, r = P.rhs, neq = false, bx = {hint:P.hint}, sc = {};
+  if(a && a.k==='apply'){
+    l = mark(wrap(P.lhs, a.I), 'in'); r = mark(wrap(P.rhs, a.I), 'in'); sc.tilt = 'bounce';
+  } else if(a && a.k==='cancel'){
+    l = mark(wrap(mark(P.lhs,'cx'), a.I), 'cx'); r = mark(wrap(P.rhs, a.I), 'set'); bx.peel = true;
+  } else if(a && a.k==='bad'){
+    sc.eqCls = 'bad';
+    if(a.kind==='oneside'){
+      l = mark(wrap(mark(P.lhs,'cx'), a.op), 'cx'); neq = true;
+      sc.tilt = (a.op.op==='sub'||a.op.op==='div') ? 'tilt-r' : 'tilt-l';
+      sc.note = 'Out of balance'; sc.eqCls = '';
+    } else {
+      l = mark(wrap(P.lhs, a.op), 'bad'); r = mark(wrap(P.rhs, a.op), 'bad'); sc.tilt = 'wobble';
+      if(a.kind==='same'){ bx.ghost = lab(a.op); sc.note = 'x is wrapped tighter'; }
+      if(a.kind==='inner'){ bx.blocked = true; bx.shake = true; sc.note = 'Blocked by the outside layer'; }
+      if(a.kind==='num'){ bx.shake = true; sc.note = leftoverNote(a.O, a.op); }
+    }
+  } else if(P.flash){
+    r = mark(P.rhs, 'new'); sc.eqCls = 'pop';
+  }
+  const busy = !!a;
+  return `${boxesHTML(P.ops, bx)}
+    <div class="meta"><span>${layers} layer${layers>1?'s':''} left</span><span>Moves ${P.moves} · Par ${P.par}</span></div>
+    ${scaleHTML(eqHTML(l, r, P.hint && !a, neq), sc)}
+    <p class="ask">Get <i>x</i> on its own. What do you do to both sides?</p>
+    <div class="opts">${P.choices.map((c,i) => `
+      <button class="opt${c.used?' wrong':''}" data-choice="${i}" ${c.used?'aria-disabled="true"':''} ${busy?'disabled':''}>
+        <span class="big">${lab(c.op)}</span><span class="small">${c.kind==='oneside'?'left side only':'both sides'}</span>
+      </button>`).join('')}</div>
+    ${P.fb ? `<div class="fb ${P.fb.cls}" role="status">${P.fb.msg}</div>` : ''}
+    ${P.hint ? `<div class="fb tip">Hint: the outside layer is highlighted. <i>x</i> ${past(P.ops[P.ops.length-1])} last.</div>`
+             : busy ? '' : `<div class="row"><button class="btn ghost" data-act="hint">Hint: what was done last?</button></div>`}
+    ${P.trail.length ? trailHTML(P.start, P.trail) : ''}`;
+}
+function escapeView(){
+  if(!P || P.source!=='escape') newPuzzle(genOps(TIERS[tier-1].layers), 'escape');
+  const chips = TIERS.map(t => {
+    const ok = unlocked(t.need);
+    return `<button class="chip" data-tier="${t.id}" aria-pressed="${t.id===tier}" ${ok?'':'disabled'}>${ok ? t.name : `${t.name} · ${t.need} XP`}</button>`;
+  }).join('');
+  return `<section class="card"><div class="tiers">${chips}</div>${puzzleHTML()}</section>`;
+}
+
+/* ---------- builder ---------- */
+function buildView(){
+  if(P && P.source==='build') return `<section class="card"><div class="label">Your equation</div>${puzzleHTML()}</section>`;
+  const types = ['mul','div','add','sub'];
+  const lhs = build(B.ops);
+  return `<section class="card">
+    <p class="ask" style="margin:0">Wrap <i>x</i> in layers to make it tricky. Then try to get it back out.</p>
+    ${boxesHTML(B.ops, false)}
+    <div class="eq">${R(lhs)} <span class="eqs">=</span> ${V('y')}</div>
+    <div class="label">Next layer</div>
+    <div class="ops4">${types.map(t => `<button data-btype="${t}" aria-pressed="${B.type===t}" aria-label="${t}">${SYM[t]}</button>`).join('')}</div>
+    <div class="row" style="justify-content:space-between">
+      <div class="stepper"><button data-act="kdown" aria-label="Smaller number">−</button><output>${B.k}</output><button data-act="kup" aria-label="Bigger number">+</button></div>
+      <button class="btn" data-act="addlayer" ${B.ops.length>=5?'disabled':''}>Add ${SYM[B.type]} ${B.k}</button>
+    </div>
+    <div class="row">
+      <button class="btn ghost" data-act="undolayer" ${B.ops.length?'':'disabled'}>Remove last layer</button>
+      <button class="btn" data-act="escapeBuilt" ${B.ops.length>=2?'':'disabled'}>Now escape it</button>
+    </div>
+    ${B.ops.length<2 ? `<div class="fb tip">Add at least two layers. Five is the most.</div>` : ''}
+  </section>`;
+}
+
+/* ---------- spot the error ---------- */
+function newSpot(){
+  const n = rnd(2, Math.min(4, Math.max(2, tier+1)));
+  const ops = genOps(n);
+  let lhs = build(ops), rhs = {t:'v', n:'y'};
+  const lines = [{step:'Start', html:eqHTML(lhs, rhs)}];
+  const e = rnd(1, n), type = pick(['sign','one']);
+  const cur = ops.slice(); let errInfo = null;
+  for(let s=1; s<=n; s++){
+    const O = cur.pop(), I = inv(O);
+    lhs = lhs.a;
+    if(s === e){
+      if(type === 'one'){ errInfo = `On the left, they did ${lab(I)}. On the right, they forgot to do anything. Both sides need the same move.`; }
+      else { rhs = wrap(rhs, O); errInfo = `They meant ${lab(I)}, but on the right side they did ${lab(O)} instead. The sign flipped.`; }
+    } else rhs = wrap(rhs, I);
+    lines.push({step:`${lab(I)} both sides`, html:eqHTML(lhs, rhs), bad:s===e});
+  }
+  SP = {lines, e, errInfo, picks:[], solved:false, tries:0};
+}
+function spotPick(i){
+  if(SP.solved || i===0) return;
+  SP.tries++;
+  if(SP.lines[i].bad){
+    SP.solved = true;
+    const xp = SP.tries===1 ? 20 : 5; SP.xp = xp; SP.gained = addXP(xp);
+  }
+  SP.picks.push(i);
+  render();
+}
+function spotView(){
+  if(!SP) newSpot();
+  return `<section class="card">
+    <p class="ask">You're the marker. One line in this working has a mistake. Tap the first wrong line.</p>
+    <div class="trail" style="border:0;padding:0">
+      ${SP.lines.map((l,i) => {
+        const cls = SP.picks.includes(i) ? (l.bad ? ' picked-ok' : ' picked-bad') : '';
+        return i===0 ? `<div class="tl"><span class="step">${l.step}</span><span class="eqt">${l.html}</span></div>`
+          : `<button class="tl${cls}" data-spot="${i}"><span class="step">${l.step}</span><span class="eqt">${l.html}</span></button>`;
+      }).join('')}
+    </div>
+    ${SP.solved ? `<div class="fb ok" role="status"><b>Caught it. +${SP.xp} XP.</b> ${SP.errInfo}${SP.gained&&SP.gained.length?` <b>Unlocked: ${SP.gained.join(', ')}.</b>`:''}</div>
+                    <button class="btn" data-act="nextspot">Mark another</button>`
+      : SP.picks.length ? `<div class="fb no" role="status">That line follows correctly from the one above it. Check each step: was the same thing done to both sides, with the right sign?</div>`
+      : `<div class="fb tip">First try earns 20 XP. Check each line against the one above.</div>`}
+  </section>`;
+}
+
+/* ---------- bosses ---------- */
+const BOSSES = [
+  {id:'ohm', name:"Ohm's Gate", sci:'Electricity', f:`${V('V')} = ${V('I')}${V('R')}`, target:'R',
+   ctx:'Voltage = current × resistance. Rearrange it to find the resistance.',
+   steps:[
+    {ask:'R is multiplied by I. How do you free R?', opts:[
+      {t:'÷ I both sides', ok:true},
+      {t:'− I both sides', why:'I is multiplying R, not added to it. Undo × with ÷.'},
+      {t:'× I both sides', why:'That multiplies by I again and buries R deeper.'}],
+     after:`${F(V('V'),V('I'))} = ${V('R')}`}
+   ]},
+  {id:'newton', name:"Newton's Lock", sci:'Forces', f:`${V('F')} = ${V('m')}${V('a')}`, target:'a',
+   ctx:'Force = mass × acceleration. Rearrange to find the acceleration.',
+   steps:[
+    {ask:'a is stuck to m by multiplication.', opts:[
+      {t:'÷ m both sides', ok:true},
+      {t:'− m both sides', why:'m and a are multiplied, not added. Use the opposite of ×.'},
+      {t:'÷ F both sides', why:'F is on the other side already. You want to remove what is attached to a.'}],
+     after:`${F(V('F'),V('m'))} = ${V('a')}`}
+   ]},
+  {id:'speed', name:'The Speed Trap', sci:'Motion', f:`${V('v')} = ${F(V('d'),V('t'))}`, target:'t',
+   ctx:'Speed = distance ÷ time. Rearrange to find how long a trip takes.',
+   steps:[
+    {ask:'t is on the bottom of a fraction. What gets it off the bottom?', opts:[
+      {t:'× t both sides', ok:true},
+      {t:'÷ t both sides', why:'t is already dividing. Dividing again pushes it further down.'},
+      {t:'− t both sides', why:'t is not added to anything. It is dividing, so undo it with ×.'}],
+     after:`${V('v')}${V('t')} = ${V('d')}`},
+    {ask:'Now t is multiplied by v. Peel v off.', opts:[
+      {t:'÷ v both sides', ok:true},
+      {t:'÷ d both sides', why:'d is not attached to t. v is the one stuck to it.'},
+      {t:'− v both sides', why:'v is multiplying t, not added to it. Undo × with ÷.'}],
+     after:`${V('t')} = ${F(V('d'),V('v'))}`}
+   ]},
+  {id:'line', name:'The Straight Line', sci:'Graphs', f:`${V('y')} = ${V('m')}${V('x')} + ${V('c')}`, target:'x',
+   ctx:'The equation of a straight line. Rearrange it to find x.',
+   steps:[
+    {ask:'Two layers: × m and + c. Which went on last?', opts:[
+      {t:'− c both sides', ok:true},
+      {t:'÷ m both sides', why:'m is the inner layer. The + c was added after, so it comes off first.'},
+      {t:'+ c both sides', why:'That adds another c. Do the opposite of + c.'}],
+     after:`${V('y')} − ${V('c')} = ${V('m')}${V('x')}`},
+    {ask:'Now only × m is left.', opts:[
+      {t:'÷ m both sides', ok:true},
+      {t:'− m both sides', why:'m is multiplying x. Undo × with ÷.'},
+      {t:'÷ y both sides', why:'y is not attached to x. Remove what is stuck to x.'}],
+     after:`${V('x')} = ${F(`${V('y')} − ${V('c')}`, V('m'))}`}
+   ]},
+  {id:'fence', name:'The Fence', sci:'Geometry', f:`${V('P')} = 2(${V('l')} + ${V('w')})`, target:'w',
+   ctx:'Perimeter of a rectangle. Rearrange it to find the width.',
+   steps:[
+    {ask:'w is inside brackets that are multiplied by 2. What is the outside layer?', opts:[
+      {t:'÷ 2 both sides', ok:true},
+      {t:'− l both sides', why:'l is inside the brackets. The × 2 wraps around everything, so it comes off first.'},
+      {t:'− 2 both sides', why:'The 2 is multiplying the brackets, not added. Undo × with ÷.'}],
+     after:`${F(V('P'),'2')} = ${V('l')} + ${V('w')}`},
+    {ask:'Brackets gone. Now free w.', opts:[
+      {t:'− l both sides', ok:true},
+      {t:'÷ l both sides', why:'l is added to w, not multiplied. Undo + with −.'},
+      {t:'+ l both sides', why:'That adds another l. Do the opposite.'}],
+     after:`${V('w')} = ${F(V('P'),'2')} − ${V('l')}`}
+   ]},
+  {id:'temp', name:'The Thermometer', sci:'Temperature', f:`${V('F')} = ${F(`9${V('C')}`,'5')} + 32`, target:'C',
+   ctx:'Converts Celsius to Fahrenheit. Rearrange it to turn Fahrenheit back into Celsius.',
+   steps:[
+    {ask:'Three layers on C: × 9, ÷ 5, + 32. Which comes off first?', opts:[
+      {t:'− 32 both sides', ok:true},
+      {t:'× 5 both sides', why:'÷ 5 is a layer inside. The + 32 went on last, so it comes off first.'},
+      {t:'÷ 9 both sides', why:'9 is the innermost layer. Work from the outside in.'}],
+     after:`${V('F')} − 32 = ${F(`9${V('C')}`,'5')}`},
+    {ask:'Now C is inside a fraction over 5.', opts:[
+      {t:'× 5 both sides', ok:true},
+      {t:'÷ 5 both sides', why:'It is already divided by 5. Undo ÷ with ×.'},
+      {t:'÷ 9 both sides', why:'The 9 is still inside the fraction. Clear the ÷ 5 first.'}],
+     after:`5(${V('F')} − 32) = 9${V('C')}`},
+    {ask:'Last layer.', opts:[
+      {t:'÷ 9 both sides', ok:true},
+      {t:'− 9 both sides', why:'9 is multiplying C. Undo × with ÷.'},
+      {t:'÷ 5 both sides', why:'The 5 is on the other side now. Remove what is attached to C.'}],
+     after:`${V('C')} = ${F(`5(${V('F')} − 32)`,'9')}`}
+   ]},
+  {id:'circle', name:'The Circle Vault', sci:'Geometry', f:`${V('A')} = π${V('r')}<sup>2</sup>`, target:'r',
+   ctx:'Area of a circle. Rearrange it to find the radius from the area.',
+   steps:[
+    {ask:'r is squared, then multiplied by π. Outside layer first.', opts:[
+      {t:'÷ π both sides', ok:true},
+      {t:'√ both sides', why:'The square is the inner layer. π was multiplied on after, so it comes off first.'},
+      {t:'− π both sides', why:'π is multiplying, not added. Undo × with ÷.'}],
+     after:`${F(V('A'),'π')} = ${V('r')}<sup>2</sup>`},
+    {ask:'Only the square is left. What undoes squaring?', opts:[
+      {t:'√ both sides', ok:true},
+      {t:'÷ 2 both sides', why:'r² means r × r, not r × 2. A square root undoes a square.'},
+      {t:'× 2 both sides', why:'The 2 in r² is a power, not a number being multiplied. Use a square root.'}],
+     after:`${V('r')} = ${SQ(F(V('A'),'π'))}`}
+   ]},
+];
+function startBoss(id){
+  const b = BOSSES.find(x => x.id===id);
+  BS = {b, i:0, moves:0, trail:[], fb:null, used:new Set(), done:false, order:b.steps.map(s => shuffle(s.opts.map((_,j)=>j)))};
+  render();
+}
+async function bossChoose(j){
+  const s = BS;
+  const st = s.b.steps[s.i], o = st.opts[j];
+  if(s.used.has(j) || s.done || s.bad) return;
+  s.moves++;
+  if(!o.ok){
+    s.used.add(j); s.fb = {cls:'no', msg:o.why}; s.bad = true; render();
+    await wait(1400);
+    s.bad = false; if(BS === s) render();
+    return;
+  }
+  {
+    const BS = s;
+    BS.trail.push({step:o.t, html:st.after});
+    BS.used = new Set(); BS.fb = {cls:'ok', msg:'Layer off.'}; BS.slide = true;
+    BS.i++;
+    if(BS.i >= BS.b.steps.length){
+      BS.done = true;
+      const first = !S.bosses.includes(BS.b.id);
+      const par = BS.moves === BS.b.steps.length;
+      BS.xp = (first ? 50 : 10) + (par ? 10 : 0); BS.par = par;
+      if(first){ S.bosses.push(BS.b.id); }
+      BS.gained = addXP(BS.xp);
+    }
+  }
+  render();
+}
+function bossView(){
+  if(!unlocked(BOSS_NEED)) return `<section class="card"><p class="ask">Bosses unlock at ${BOSS_NEED} XP.</p><p style="margin:0;color:var(--muted)">They are real science formulas. Earn XP in Escape, Build and Spot it to open the vault.</p></section>`;
+  if(!BS){
+    return `<section class="card"><p class="ask" style="margin:0">Real formulas. First win is worth 50 XP.</p>
+      <div class="blist">${BOSSES.map(b => {
+        const beat = S.bosses.includes(b.id);
+        return `<button class="bcard${beat?' beaten':''}" data-boss="${b.id}">
+          <span class="bn">${b.name}</span><span class="bf">${b.f}</span>
+          <span class="bs">${b.sci} · find <i>${b.target}</i> · ${b.steps.length} step${b.steps.length>1?'s':''}${beat?' · beaten':''}</span></button>`;
+      }).join('')}</div></section>`;
+  }
+  const b = BS.b;
+  if(BS.done){
+    const burst = !BS.burstShown; BS.burstShown = true;
+    return `<section class="card">
+      <div class="label">${b.sci}</div>
+      <div class="boxes">${burst?burstHTML():''}</div>
+      ${scaleHTML(b.steps[b.steps.length-1].after, {eqCls:'slidein', tilt:'bounce'})}
+      <div class="win"><h2>${b.name} beaten</h2>
+        <div class="badges"><span class="badge">Moves ${BS.moves}</span><span class="badge ${BS.par?'par':''}">Par ${b.steps.length}</span><span class="badge">+${BS.xp} XP</span></div>
+        ${BS.gained&&BS.gained.length?`<div class="fb ok">Unlocked: <b>${BS.gained.join(', ')}</b></div>`:''}
+      </div>
+      <div class="row"><button class="btn" data-act="bosslist">Back to bosses</button><button class="btn ghost" data-boss="${b.id}">Replay</button></div>
+      ${trailHTML(b.f, BS.trail)}
+    </section>`;
+  }
+  const st = b.steps[BS.i];
+  const cur = BS.i===0 ? b.f : b.steps[BS.i-1].after;
+  return `<section class="card">
+    <div class="row" style="justify-content:space-between"><button class="btn ghost" data-act="bosslist" style="padding:6px 12px">← Bosses</button><span class="meta" style="gap:10px"><span>Step ${BS.i+1} of ${b.steps.length}</span></span></div>
+    <div><div class="label">${b.name}</div><p style="margin:.2em 0 0">${b.ctx}</p></div>
+    ${BS.bad ? scaleHTML(cur.replace(' = ', ` ${EQ(true)} `), {eqCls:'bad', tilt:'wobble', note:'That doesn’t free it'})
+             : scaleHTML(cur, {eqCls: BS.slide ? 'slidein' : '', tilt: BS.slide ? 'bounce' : ''})}
+    <p class="ask">Goal: <i>${b.target}</i> on its own. ${st.ask}</p>
+    <div class="opts">${BS.order[BS.i].map(j => {
+      const o = st.opts[j];
+      return `<button class="opt text${BS.used.has(j)?' wrong':''}" data-bossopt="${j}" ${BS.bad?'disabled':''}><span class="big">${o.t}</span></button>`;
+    }).join('')}</div>
+    ${BS.fb ? `<div class="fb ${BS.fb.cls}" role="status">${BS.fb.msg}</div>` : ''}
+    ${BS.trail.length ? trailHTML(b.f, BS.trail) : ''}
+  </section>`;
+}
+
+/* ---------- render + events ---------- */
+function render(){
+  renderHeader();
+  document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab===tab));
+  const views = {escape:escapeView, build:buildView, spot:spotView, boss:bossView};
+  $('#main').innerHTML = views[tab]();
+  if(P) P.flash = false;
+  if(BS) BS.slide = false;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if(!t) return;
+  const d = t.dataset;
+  if(d.tab){ tab = d.tab; if(tab==='escape' && P && P.source!=='escape') P = null; if(tab==='build' && P && P.source!=='build') P = null; render(); return; }
+  if(d.tier){ tier = +d.tier; newPuzzle(genOps(TIERS[tier-1].layers), 'escape'); render(); return; }
+  if(d.choice !== undefined){ choose(+d.choice); return; }
+  if(d.spot !== undefined){ spotPick(+d.spot); return; }
+  if(d.boss){ startBoss(d.boss); return; }
+  if(d.bossopt !== undefined){ bossChoose(+d.bossopt); return; }
+  if(d.btype){ B.type = d.btype; if((B.type==='mul'||B.type==='div') && B.k<2) B.k = 2; render(); return; }
+  switch(d.act){
+    case 'hint': P.hint = true; render(); break;
+    case 'next': newPuzzle(genOps(TIERS[tier-1].layers), 'escape'); render(); break;
+    case 'rebuild': P = null; B.ops = []; render(); break;
+    case 'kup': B.k = Math.min(12, B.k+1); render(); break;
+    case 'kdown': B.k = Math.max((B.type==='mul'||B.type==='div')?2:1, B.k-1); render(); break;
+    case 'addlayer': if(B.ops.length<5){ B.ops.push({op:B.type, k:B.k}); } render(); break;
+    case 'undolayer': B.ops.pop(); render(); break;
+    case 'escapeBuilt': newPuzzle(B.ops, 'build'); render(); break;
+    case 'nextspot': newSpot(); render(); break;
+    case 'bosslist': BS = null; render(); break;
+  }
+});
+$('#unlockAll').addEventListener('click', () => { S.unlockAll = !S.unlockAll; save(); $('#unlockAll').textContent = S.unlockAll ? 'Re-lock levels' : 'Unlock all levels'; render(); });
+$('#resetBtn').addEventListener('click', () => { $('#resetConfirm').hidden = false; });
+$('#resetYes').addEventListener('click', () => {
+  S = {xp:0, streak:0, best:0, bosses:[], unlockAll:false}; save();
+  tier = 1; P = null; SP = null; BS = null; $('#resetConfirm').hidden = true; $('#unlockAll').textContent = 'Unlock all levels'; render();
+});
+$('#unlockAll').textContent = S.unlockAll ? 'Re-lock levels' : 'Unlock all levels';
+render();
+</script>
+
+<script>
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>

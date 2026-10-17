@@ -1,0 +1,16 @@
+{
+  "name": "Escape the Box",
+  "short_name": "Escape the Box",
+  "description": "Peel the layers off x. An equation-rearranging game.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F1EEF8",
+  "theme_color": "#E8501A",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
